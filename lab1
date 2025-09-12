@@ -189,3 +189,39 @@ class Employee:
                 self._last_name == other._last_name and
                 self._patronymic == other._patronymic and
                 self._salary == other._salary)
+
+
+class Person:
+
+    def __init__(self, first_name, last_name):
+        self._first_name = self.validate_name(first_name)
+        self._last_name = self.validate_name(last_name)
+
+    @staticmethod
+    def validate_name(value):
+
+        if not isinstance(value, str) or len(value.strip()) == 0:
+            raise ValueError("Name must be a non-empty string")
+        return value.strip()
+
+    @property
+    def first_name(self):
+        return self._first_name
+
+    @first_name.setter
+    def first_name(self, value):
+        self._first_name = self.validate_name(value)
+
+    @property
+    def last_name(self):
+        return self._last_name
+
+    @last_name.setter
+    def last_name(self, value):
+        self._last_name = self.validate_name(value)
+
+    def __str__(self):
+        return f"Person {self._first_name} {self._last_name}"
+
+    def __repr__(self):
+        return f"Person(first_name='{self._first_name}', last_name='{self._last_name}')"
