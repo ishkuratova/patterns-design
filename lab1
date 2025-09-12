@@ -1,10 +1,45 @@
 class Employee:
     def __init__(self, employee_id, first_name, last_name, patronymic, salary):
-        self._employee_id = employee_id
-        self._first_name = first_name
-        self._last_name = last_name
-        self._patronymic = patronymic
-        self._salary = salary
+        self._employee_id = self.validate_employee_id(employee_id)
+        self._first_name = self.validate_first_name(first_name)
+        self._last_name = self.validate_last_name(last_name)
+        self._patronymic = self.validate_patronymic(patronymic)
+        self._salary = self.validate_salary(salary)
+
+
+        @staticmethod
+    def validate_employee_id(employee_id):
+        if not isinstance(employee_id, int) or employee_id <= 0:
+            raise ValueError("Employee ID must be a positive integer")
+        return employee_id
+
+    @staticmethod
+    def validate_first_name(first_name):
+        if not isinstance(first_name, str) or len(first_name.strip()) == 0:
+            raise ValueError("First name must be a non-empty string")
+        return first_name.strip()
+
+    @staticmethod
+    def validate_last_name(last_name):
+        if not isinstance(last_name, str) or len(last_name.strip()) == 0:
+            raise ValueError("Last name must be a non-empty string")
+        return last_name.strip()
+
+    @staticmethod
+    def validate_patronymic(patronymic):
+        if patronymic is None:
+            return None
+        if not isinstance(patronymic, str):
+            raise ValueError("Patronymic must be None or a string")
+        if len(patronymic.strip()) == 0:
+            return None
+        return patronymic.strip()
+
+    @staticmethod
+    def validate_salary(salary):
+        if not isinstance(salary, int) or salary < 0:
+            raise ValueError("Salary must be a non-negative integer")
+        return salary
 
     @property
     def employee_id(self):
