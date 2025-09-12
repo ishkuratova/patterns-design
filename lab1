@@ -1,17 +1,105 @@
+import json
+
+
 class Employee:
-    def __init__(self, employee_id, first_name, last_name, patronymic, salary):
+
+    def __init__(self, *args):
+        if len(args) == 1:
+            data = args[0]
+
+            if isinstance(data, str):
+                if data.strip().startswith('{') and data.strip().endswith('}'):
+                    self._init_from_json(data)
+                else:
+                    self._init_from_string(data)
+
+            elif isinstance(data, list):
+                self._init_from_list(data)
+
+            elif isinstance(data, dict):
+                self._init_from_dict(data)
+
+            else:
+                raise ValueError("Unsupported data type for single argument")
+
+        elif len(args) == 5:
+            employee_id, first_name, last_name, patronymic, salary = args
+            self._employee_id = self.validate_employee_id(employee_id)
+            self._first_name = self.validate_name(first_name)
+            self._last_name = self.validate_name(last_name)
+            self._patronymic = self.validate_name(patronymic, True)
+            self._salary = self.validate_salary(salary)
+
+        else:
+            raise ValueError("Invalid number of arguments")
+
+    def _init_from_string(self, data_string):
+        parts = data_string.split(';')
+        if len(parts) != 5:
+            raise ValueError("String must have exactly 5 parts separated by ';'")
+
+        try:
+            employee_id = int(parts[0].strip())
+            first_name = parts[1].strip()
+            last_name = parts[2].strip()
+            patronymic = parts[3].strip() if parts[3].strip() else None
+            salary = int(parts[4].strip())
+        except ValueError as e:
+            raise ValueError(f"Invalid data format in string: {e}")
+
         self._employee_id = self.validate_employee_id(employee_id)
-        self._first_name = self.validate_first_name(first_name)
-        self._last_name = self.validate_last_name(last_name)
-        self._patronymic = self.validate_patronymic(patronymic)
+        self._first_name = self.validate_name(first_name)
+        self._last_name = self.validate_name(last_name)
+        self._patronymic = self.validate_name(patronymic, True)
         self._salary = self.validate_salary(salary)
 
+    def _init_from_json(self, json_string):
+        try:
+            data = json.loads(json_string)
+            self._init_from_dict(data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
 
-    @staticmethod
-    def validate_employee_id(employee_id):
-        if not isinstance(employee_id, int) or employee_id <= 0:
-            raise ValueError("Employee ID must be a positive integer")
-        return employee_id
+    def _init_from_dict(self, data_dict):
+        required_keys = ['employee_id', 'first_name', 'last_name', 'salary']
+
+        for key in required_keys:
+            if key not in data_dict:
+                raise ValueError(f"Missing required key in JSON: {key}")
+
+        try:
+            employee_id = int(data_dict['employee_id'])
+            first_name = data_dict['first_name']
+            last_name = data_dict['last_name']
+            patronymic = data_dict.get('patronymic')
+            salary = int(data_dict['salary'])
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid data types in JSON: {e}")
+
+        self._employee_id = self.validate_employee_id(employee_id)
+        self._first_name = self.validate_name(first_name)
+        self._last_name = self.validate_name(last_name)
+        self._patronymic = self.validate_name(patronymic, True)
+        self._salary = self.validate_salary(salary)
+
+    def _init_from_list(self, data_list):
+        if len(data_list) != 5:
+            raise ValueError("List must have exactly 5 elements")
+
+        try:
+            employee_id = int(data_list[0])
+            first_name = str(data_list[1])
+            last_name = str(data_list[2])
+            patronymic = str(data_list[3]) if data_list[3] is not None else None
+            salary = int(data_list[4])
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid data types in list: {e}")
+
+        self._employee_id = self.validate_employee_id(employee_id)
+        self._first_name = self.validate_name(first_name)
+        self._last_name = self.validate_name(last_name)
+        self._patronymic = self.validate_name(patronymic, True)
+        self._salary = self.validate_salary(salary)
 
     @staticmethod
     def validate_name(value, is_patronymic=False):
@@ -29,6 +117,12 @@ class Employee:
             return value.strip()
 
     @staticmethod
+    def validate_employee_id(employee_id):
+        if not isinstance(employee_id, int) or employee_id <= 0:
+            raise ValueError("Employee ID must be a positive integer")
+        return employee_id
+
+    @staticmethod
     def validate_salary(salary):
         if not isinstance(salary, int) or salary < 0:
             raise ValueError("Salary must be a non-negative integer")
@@ -44,7 +138,7 @@ class Employee:
 
     @first_name.setter
     def first_name(self, value):
-        self._first_name = value
+        self._first_name = self.validate_name(value)
 
     @property
     def last_name(self):
@@ -52,7 +146,7 @@ class Employee:
 
     @last_name.setter
     def last_name(self, value):
-        self._last_name = value
+        self._last_name = self.validate_name(value)
 
     @property
     def patronymic(self):
@@ -60,7 +154,7 @@ class Employee:
 
     @patronymic.setter
     def patronymic(self, value):
-        self._patronymic = value
+        self._patronymic = self.validate_name(value, is_patronymic=True)
 
     @property
     def salary(self):
@@ -68,7 +162,7 @@ class Employee:
 
     @salary.setter
     def salary(self, value):
-        self._salary = value
+        self._salary = self.validate_salary(value)
 
     def get_full_name(self):
         parts = [self._last_name, self._first_name]
