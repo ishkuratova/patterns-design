@@ -14,26 +14,19 @@ class Employee:
         return employee_id
 
     @staticmethod
-    def validate_first_name(first_name):
-        if not isinstance(first_name, str) or len(first_name.strip()) == 0:
-            raise ValueError("First name must be a non-empty string")
-        return first_name.strip()
-
-    @staticmethod
-    def validate_last_name(last_name):
-        if not isinstance(last_name, str) or len(last_name.strip()) == 0:
-            raise ValueError("Last name must be a non-empty string")
-        return last_name.strip()
-
-    @staticmethod
-    def validate_patronymic(patronymic):
-        if patronymic is None:
-            return None
-        if not isinstance(patronymic, str):
-            raise ValueError("Patronymic must be None or a string")
-        if len(patronymic.strip()) == 0:
-            return None
-        return patronymic.strip()
+    def validate_name(value, is_patronymic=False):
+        if is_patronymic:
+            if value is None:
+                return None
+            if not isinstance(value, str):
+                raise ValueError("Patronymic must be None or a string")
+            if len(value.strip()) == 0:
+                return None
+            return value.strip()
+        else:
+            if not isinstance(value, str) or len(value.strip()) == 0:
+                raise ValueError("name must be a non-empty string")
+            return value.strip()
 
     @staticmethod
     def validate_salary(salary):
