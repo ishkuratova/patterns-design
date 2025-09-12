@@ -193,16 +193,25 @@ class Employee:
 
 class Person:
 
-    def __init__(self, first_name, last_name):
+    def __init__(self, first_name, last_name, patronymic=None):
         self._first_name = self.validate_name(first_name)
         self._last_name = self.validate_name(last_name)
+        self._patronymic = self.validate_name(patronymic, True)
 
     @staticmethod
-    def validate_name(value):
-
-        if not isinstance(value, str) or len(value.strip()) == 0:
-            raise ValueError("Name must be a non-empty string")
-        return value.strip()
+    def validate_name(value, is_patronymic=False):
+        if is_patronymic:
+            if value is None:
+                return None
+            if not isinstance(value, str):
+                raise ValueError("Patronymic must be None or a string")
+            if len(value.strip()) == 0:
+                return None
+            return value.strip()
+        else:
+            if not isinstance(value, str) or len(value.strip()) == 0:
+                raise ValueError("Name must be a non-empty string")
+            return value.strip()
 
     @property
     def first_name(self):
@@ -220,8 +229,23 @@ class Person:
     def last_name(self, value):
         self._last_name = self.validate_name(value)
 
+    @property
+    def patronymic(self):
+        return self._patronymic
+
+    @patronymic.setter
+    def patronymic(self, value):
+        self._patronymic = self.validate_name(value, is_patronymic=True)
+
+    def get_full_name(self):
+        parts = [self._last_name, self._first_name]
+        if self._patronymic:
+            parts.append(self._patronymic)
+        return " ".join(parts)
+
     def __str__(self):
-        return f"Person {self._first_name} {self._last_name}"
+        return f"Person {self.get_full_name()}"
 
     def __repr__(self):
-        return f"Person(first_name='{self._first_name}', last_name='{self._last_name}')"
+        return (f"Person(first_name='{self._first_name}', "
+                f"last_name='{self._last_name}', patronymic='{self._patronymic}')")
