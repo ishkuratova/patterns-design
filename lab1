@@ -1,0 +1,56 @@
+class Employee:
+    def __init__(self, employee_id, first_name, last_name, patronymic, salary):
+        self._employee_id = employee_id
+        self._first_name = first_name
+        self._last_name = last_name
+        self._patronymic = patronymic
+        self._salary = salary
+
+    @property
+    def employee_id(self):
+        return self._employee_id
+
+    @property
+    def first_name(self):
+        return self._first_name
+
+    @first_name.setter
+    def first_name(self, value):
+        self._first_name = value
+
+    @property
+    def last_name(self):
+        return self._last_name
+
+    @last_name.setter
+    def last_name(self, value):
+        self._last_name = value
+
+    @property
+    def patronymic(self):
+        return self._patronymic
+
+    @patronymic.setter
+    def patronymic(self, value):
+        self._patronymic = value
+
+    @property
+    def salary(self):
+        return self._salary
+
+    @salary.setter
+    def salary(self, value):
+        self._salary = value
+
+    def get_full_name(self):
+        parts = [self._last_name, self._first_name]
+        if self._patronymic:
+            parts.append(self._patronymic)
+        return " ".join(parts)
+
+    def __str__(self):
+        return f"Employee {self.employee_id}: {self.get_full_name()}, Salary: {self._salary}"
+
+    def __repr__(self):
+        return (f"Employee(employee_id={self._employee_id}, first_name='{self._first_name}', "
+                f"last_name='{self._last_name}', patronymic='{self._patronymic}', salary={self._salary})")
