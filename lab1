@@ -7,7 +7,7 @@ class Employee:
         self._salary = self.validate_salary(salary)
 
 
-        @staticmethod
+    @staticmethod
     def validate_employee_id(employee_id):
         if not isinstance(employee_id, int) or employee_id <= 0:
             raise ValueError("Employee ID must be a positive integer")
