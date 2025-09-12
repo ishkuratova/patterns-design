@@ -176,3 +176,16 @@ class Employee:
     def __repr__(self):
         return (f"Employee(employee_id={self._employee_id}, first_name='{self._first_name}', "
                 f"last_name='{self._last_name}', patronymic='{self._patronymic}', salary={self._salary})")
+
+    def short_info(self):
+        return f"ID: {self._employee_id}, Salary: {self._salary}"
+
+    def __eq__(self, other):
+        if not isinstance(other, Employee):
+            return False
+
+        return (self._employee_id == other._employee_id and
+                self._first_name == other._first_name and
+                self._last_name == other._last_name and
+                self._patronymic == other._patronymic and
+                self._salary == other._salary)
