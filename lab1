@@ -17,7 +17,6 @@ class Person:
             if not isinstance(value, str):
                 raise ValueError("Patronymic must be None or a string")
 
-            # Регулярное выражение для валидации имени/отчества (только буквы, дефисы и пробелы)
             pattern = r'^[A-Za-zА-Яа-яЁё\- ]+$'
             if not re.match(pattern, value.strip()):
                 raise ValueError("Name must contain only letters, hyphens and spaces")
@@ -29,7 +28,6 @@ class Person:
             if not isinstance(value, str):
                 raise ValueError("Name must be a string")
 
-            # Регулярное выражение для валидации имени/фамилии
             pattern = r'^[A-Za-zА-Яа-яЁё\- ]+$'
             if not re.match(pattern, value.strip()):
                 raise ValueError("Name must contain only letters, hyphens and spaces")
@@ -75,6 +73,7 @@ class Person:
         return f"Person(first_name='{self._first_name}', last_name='{self._last_name}', patronymic='{self._patronymic}')"
 
 
+
 class Employee(Person):
 
     def __init__(self, *args):
@@ -83,15 +82,82 @@ class Employee(Person):
 
             if isinstance(data, str):
                 if data.strip().startswith('{') and data.strip().endswith('}'):
-                    self._init_from_json(data)
+                    try:
+                        data_dict = json.loads(data)
+                        required_keys = ['employee_id', 'first_name', 'last_name', 'salary']
+                        for key in required_keys:
+                            if key not in data_dict:
+                                raise ValueError(f"Missing required key in JSON: {key}")
+
+                        try:
+                            employee_id = int(data_dict['employee_id'])
+                            first_name = data_dict['first_name']
+                            last_name = data_dict['last_name']
+                            patronymic = data_dict.get('patronymic')
+                            salary = int(data_dict['salary'])
+                        except (ValueError, TypeError) as e:
+                            raise ValueError(f"Invalid data types in JSON: {e}")
+
+                        super().__init__(first_name, last_name, patronymic)
+                        self._employee_id = self.validate_employee_id(employee_id)
+                        self._salary = self.validate_salary(salary)
+
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f"Invalid JSON format: {e}")
                 else:
-                    self._init_from_string(data)
+                    pattern = r'^\s*(\d+)\s*;\s*([^;]+)\s*;\s*([^;]+)\s*;\s*([^;]*)\s*;\s*(\d+)\s*$'
+                    match = re.match(pattern, data)
+                    if not match:
+                        raise ValueError("String must be in format: 'id;first_name;last_name;patronymic;salary'")
+
+                    try:
+                        employee_id = int(match.group(1))
+                        first_name = match.group(2).strip()
+                        last_name = match.group(3).strip()
+                        patronymic = match.group(4).strip() if match.group(4).strip() else None
+                        salary = int(match.group(5))
+                    except ValueError as e:
+                        raise ValueError(f"Invalid data format in string: {e}")
+
+                    super().__init__(first_name, last_name, patronymic)
+                    self._employee_id = self.validate_employee_id(employee_id)
+                    self._salary = self.validate_salary(salary)
 
             elif isinstance(data, list):
-                self._init_from_list(data)
+                if len(data) != 5:
+                    raise ValueError("List must have exactly 5 elements")
+
+                try:
+                    employee_id = int(data[0])
+                    first_name = str(data[1])
+                    last_name = str(data[2])
+                    patronymic = str(data[3]) if data[3] is not None else None
+                    salary = int(data[4])
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid data types in list: {e}")
+
+                super().__init__(first_name, last_name, patronymic)
+                self._employee_id = self.validate_employee_id(employee_id)
+                self._salary = self.validate_salary(salary)
 
             elif isinstance(data, dict):
-                self._init_from_dict(data)
+                required_keys = ['employee_id', 'first_name', 'last_name', 'salary']
+                for key in required_keys:
+                    if key not in data:
+                        raise ValueError(f"Missing required key in dict: {key}")
+
+                try:
+                    employee_id = int(data['employee_id'])
+                    first_name = data['first_name']
+                    last_name = data['last_name']
+                    patronymic = data.get('patronymic')
+                    salary = int(data['salary'])
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid data types in dict: {e}")
+
+                super().__init__(first_name, last_name, patronymic)
+                self._employee_id = self.validate_employee_id(employee_id)
+                self._salary = self.validate_salary(salary)
 
             else:
                 raise ValueError("Unsupported data type for single argument")
@@ -104,70 +170,6 @@ class Employee(Person):
 
         else:
             raise ValueError("Invalid number of arguments")
-
-    def _init_from_string(self, data_string: str):
-        # Регулярное выражение для валидации строкового формата
-        pattern = r'^\s*(\d+)\s*;\s*([^;]+)\s*;\s*([^;]+)\s*;\s*([^;]*)\s*;\s*(\d+)\s*$'
-        match = re.match(pattern, data_string)
-        if not match:
-            raise ValueError("String must be in format: 'id;first_name;last_name;patronymic;salary'")
-
-        try:
-            employee_id = int(match.group(1))
-            first_name = match.group(2).strip()
-            last_name = match.group(3).strip()
-            patronymic = match.group(4).strip() if match.group(4).strip() else None
-            salary = int(match.group(5))
-        except ValueError as e:
-            raise ValueError(f"Invalid data format in string: {e}")
-
-        super().__init__(first_name, last_name, patronymic)
-        self._employee_id = self.validate_employee_id(employee_id)
-        self._salary = self.validate_salary(salary)
-
-    def _init_from_json(self, json_string: str):
-        try:
-            data = json.loads(json_string)
-            self._init_from_dict(data)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {e}")
-
-    def _init_from_dict(self, data_dict: dict):
-        required_keys = ['employee_id', 'first_name', 'last_name', 'salary']
-
-        for key in required_keys:
-            if key not in data_dict:
-                raise ValueError(f"Missing required key in JSON: {key}")
-
-        try:
-            employee_id = int(data_dict['employee_id'])
-            first_name = data_dict['first_name']
-            last_name = data_dict['last_name']
-            patronymic = data_dict.get('patronymic')
-            salary = int(data_dict['salary'])
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid data types in JSON: {e}")
-
-        super().__init__(first_name, last_name, patronymic)
-        self._employee_id = self.validate_employee_id(employee_id)
-        self._salary = self.validate_salary(salary)
-
-    def _init_from_list(self, data_list: list):
-        if len(data_list) != 5:
-            raise ValueError("List must have exactly 5 elements")
-
-        try:
-            employee_id = int(data_list[0])
-            first_name = str(data_list[1])
-            last_name = str(data_list[2])
-            patronymic = str(data_list[3]) if data_list[3] is not None else None
-            salary = int(data_list[4])
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid data types in list: {e}")
-
-        super().__init__(first_name, last_name, patronymic)
-        self._employee_id = self.validate_employee_id(employee_id)
-        self._salary = self.validate_salary(salary)
 
     @staticmethod
     def validate_employee_id(employee_id: int) -> int:
