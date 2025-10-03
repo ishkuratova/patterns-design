@@ -478,3 +478,50 @@ class Employee_rep_DB:
         except Exception as e:
             print(f"Ошибка получения всех сотрудников: {e}")
             return []
+
+
+class Employee_rep_DB_decorator:
+    def __init__(self, db_repo: Employee_rep_DB):
+        self._db_repo = db_repo
+
+    def get_k_n_short_list(self, k: int, n: int, filter_func: callable = None, sort_field: str = None,
+                           reverse: bool = False) -> List[Dict[str, Any]]:
+        employees = self._db_repo.get_all_employees()
+
+        if filter_func:
+            employees = [emp for emp in employees if filter_func(emp)]
+
+        if sort_field:
+            valid_fields = ['employee_id', 'first_name', 'last_name', 'salary']
+            if sort_field not in valid_fields:
+                raise ValueError(f"Недопустимое поле для сортировки: {sort_field}")
+
+            if sort_field == 'employee_id':
+                employees.sort(key=lambda x: x.employee_id, reverse=reverse)
+            elif sort_field == 'first_name':
+                employees.sort(key=lambda x: x._first_name, reverse=reverse)
+            elif sort_field == 'last_name':
+                employees.sort(key=lambda x: x._last_name, reverse=reverse)
+            elif sort_field == 'salary':
+                employees.sort(key=lambda x: x.salary, reverse=reverse)
+
+        offset = (n - 1) * k
+        end_index = offset + k
+
+        short_list = []
+        for i in range(offset, min(end_index, len(employees))):
+            employee = employees[i]
+            short_list.append({
+                'employee_id': employee.employee_id,
+                'short_info': employee.short_info()
+            })
+
+        return short_list
+
+    def get_count(self, filter_func: callable = None) -> int:
+        employees = self._db_repo.get_all_employees()
+
+        if filter_func:
+            employees = [emp for emp in employees if filter_func(emp)]
+
+        return len(employees)
