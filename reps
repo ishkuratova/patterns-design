@@ -205,10 +205,37 @@ class EmployeeRepDBAdapter(EmployeeRep):
         self._employees = self._db.get_all_employees()
 
     def _save_data(self):
-        pass
+        try:
+            print(f"DEBUG: Сохранение {len(self._employees)} сотрудников в БД")
+            current_db_employees = self._db.get_all_employees()
+            current_ids = {emp.employee_id for emp in current_db_employees}
+
+            for emp_id in current_ids:
+                if not any(e.employee_id == emp_id for e in self._employees):
+                    self._db.delete_employee(emp_id)
+
+            for employee in self._employees:
+                if employee.employee_id in current_ids:
+                    self._db.update_employee(
+                        employee.employee_id,
+                        first_name=employee.first_name,
+                        last_name=employee.last_name,
+                        patronymic=employee.patronymic,
+                        salary=employee.salary
+                    )
+                else:
+                    self._db.add_employee(
+                        employee.first_name,
+                        employee.last_name,
+                        employee.salary,
+                        employee.patronymic
+                    )
+        except Exception as e:
+            print(f"DEBUG: Ошибка сохранения в БД: {e}")
 
     def read_all(self) -> List['Employee']:
-        return self._db.get_all_employees()
+        print(f"DEBUG: read_all() возвращает {len(self._employees)} сотрудников")
+        return self._employees.copy()
 
     def write_all(self, employees: List['Employee']):
         current_employees = self._db.get_all_employees()
@@ -575,5 +602,3 @@ class EmployeeRepFileDecorator:
             employees = [emp for emp in employees if filter_func(emp)]
 
         return len(employees)
-
-
