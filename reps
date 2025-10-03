@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import psycopg2
 import json
 import yaml
 import os
@@ -190,3 +191,223 @@ class Employee_rep_yaml(Employee_rep):
             }
             data.append(emp_dict)
         return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
+
+
+class Employee_rep_DB:
+    def __init__(self,
+                 host: str,
+                 port: int,
+                 database: str,
+                 user: str,
+                 password: str):
+        self.connection_params = {
+            'host': host,
+            'port': port,
+            'database': database,
+            'user': user,
+            'password': password
+        }
+        self._ensure_table_exists()
+
+    def _get_connection(self):
+        return psycopg2.connect(**self.connection_params)
+
+    def _ensure_table_exists(self):
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS employees (
+            employee_id SERIAL PRIMARY KEY,
+            first_name VARCHAR(100) NOT NULL,
+            last_name VARCHAR(100) NOT NULL,
+            patronymic VARCHAR(100),
+            salary INTEGER NOT NULL CHECK (salary >= 0),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(create_table_query)
+                    conn.commit()
+        except Exception as e:
+            print(f"Ошибка создания таблицы: {e}")
+
+    def get_by_id(self, employee_id: int) -> Employee | None:
+        query = """
+        SELECT employee_id, first_name, last_name, patronymic, salary 
+        FROM employees 
+        WHERE employee_id = %s
+        """
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (employee_id,))
+                    row = cursor.fetchone()
+
+                    if row:
+                        employee_data = {
+                            'employee_id': row[0],
+                            'first_name': row[1],
+                            'last_name': row[2],
+                            'patronymic': row[3],
+                            'salary': row[4]
+                        }
+                        return Employee(employee_data)
+                    return None
+
+        except Exception as e:
+            print(f"Ошибка получения сотрудника по ID: {e}")
+            return None
+
+    def get_k_n_short_list(self, k: int, n: int) -> List[Dict[str, Any]]:
+        offset = (n - 1) * k
+        query = """
+        SELECT employee_id, first_name, last_name, patronymic, salary 
+        FROM employees 
+        ORDER BY employee_id 
+        LIMIT %s OFFSET %s
+        """
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (k, offset))
+                    rows = cursor.fetchall()
+
+                    short_list = []
+                    for row in rows:
+                        employee_data = {
+                            'employee_id': row[0],
+                            'first_name': row[1],
+                            'last_name': row[2],
+                            'patronymic': row[3],
+                            'salary': row[4]
+                        }
+                        employee = Employee(employee_data)
+                        short_list.append({
+                            'employee_id': employee.employee_id,
+                            'short_info': employee.short_info()
+                        })
+
+                    return short_list
+
+        except Exception as e:
+            print(f"Ошибка получения списка сотрудников: {e}")
+            return []
+
+    def add_employee(self, first_name: str, last_name: str, salary: int,
+                     patronymic: str | None = None) -> Employee | None:
+        query = """
+        INSERT INTO employees (first_name, last_name, patronymic, salary) 
+        VALUES (%s, %s, %s, %s) 
+        RETURNING employee_id, first_name, last_name, patronymic, salary
+        """
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (first_name, last_name, patronymic, salary))
+                    row = cursor.fetchone()
+                    conn.commit()
+
+                    if row:
+                        employee_data = {
+                            'employee_id': row[0],
+                            'first_name': row[1],
+                            'last_name': row[2],
+                            'patronymic': row[3],
+                            'salary': row[4]
+                        }
+                        return Employee(employee_data)
+                    return None
+
+        except Exception as e:
+            print(f"Ошибка добавления сотрудника: {e}")
+            return None
+
+    def update_employee(self, employee_id: int, **kwargs) -> bool:
+        valid_fields = ['first_name', 'last_name', 'patronymic', 'salary']
+        updates = []
+        values = []
+
+        for field, value in kwargs.items():
+            if field in valid_fields:
+                updates.append(f"{field} = %s")
+                values.append(value)
+
+        if not updates:
+            return False
+
+        values.append(employee_id)
+        set_clause = ", ".join(updates)
+        query = f"UPDATE employees SET {set_clause} WHERE employee_id = %s"
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, values)
+                    conn.commit()
+                    return cursor.rowcount > 0
+
+        except Exception as e:
+            print(f"Ошибка обновления сотрудника: {e}")
+            return False
+
+    def delete_employee(self, employee_id: int) -> bool:
+        query = "DELETE FROM employees WHERE employee_id = %s"
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (employee_id,))
+                    conn.commit()
+                    return cursor.rowcount > 0
+
+        except Exception as e:
+            print(f"Ошибка удаления сотрудника: {e}")
+            return False
+
+    def get_count(self) -> int:
+        query = "SELECT COUNT(*) FROM employees"
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    result = cursor.fetchone()
+                    return result[0] if result else 0
+
+        except Exception as e:
+            print(f"Ошибка получения количества сотрудников: {e}")
+            return 0
+
+    def get_all_employees(self) -> List[Employee]:
+        query = """
+        SELECT employee_id, first_name, last_name, patronymic, salary 
+        FROM employees 
+        ORDER BY employee_id
+        """
+
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    rows = cursor.fetchall()
+
+                    employees = []
+                    for row in rows:
+                        employee_data = {
+                            'employee_id': row[0],
+                            'first_name': row[1],
+                            'last_name': row[2],
+                            'patronymic': row[3],
+                            'salary': row[4]
+                        }
+                        employees.append(Employee(employee_data))
+
+                    return employees
+
+        except Exception as e:
+            print(f"Ошибка получения всех сотрудников: {e}")
+            return []
