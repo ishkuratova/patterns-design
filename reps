@@ -1,4 +1,5 @@
 import json
+import yaml
 import os
 from typing import List, Dict, Any
 from employee import Employee
@@ -132,3 +133,151 @@ class Employee_rep_json:
     def get_all_short_info(self) -> List[Dict[str, Any]]:
         return [{'employee_id': emp.employee_id, 'short_info': emp.short_info()}
                 for emp in self._employees]
+
+
+class Employee_rep_yaml:
+    def __init__(self, filename: str = "employees.yaml"):
+        self.filename = filename
+        self._employees = []
+        self._load_data()
+
+    def _load_data(self):
+        if os.path.exists(self.filename):
+            try:
+                with open(self.filename, 'r', encoding='utf-8') as file:
+                    data = yaml.safe_load(file)
+                    if data is None:
+                        data = []
+                    self._employees = [Employee(item) for item in data]
+            except (yaml.YAMLError, ValueError) as e:
+                print(f"Ошибка загрузки данных из YAML: {e}")
+                self._employees = []
+        else:
+            self._employees = []
+
+    def _save_data(self):
+        try:
+            with open(self.filename, 'w', encoding='utf-8') as file:
+                # Преобразуем объекты Employee в словари для сериализации
+                data = []
+                for emp in self._employees:
+                    emp_dict = {
+                        'employee_id': emp.employee_id,
+                        'first_name': emp._first_name,
+                        'last_name': emp._last_name,
+                        'patronymic': emp._patronymic,
+                        'salary': emp.salary
+                    }
+                    data.append(emp_dict)
+
+                yaml.dump(data, file, default_flow_style=False, allow_unicode=True, indent=2)
+        except Exception as e:
+            print(f"Ошибка сохранения данных в YAML: {e}")
+
+    def read_all(self) -> List['Employee']:
+        self._load_data()
+        return self._employees.copy()
+
+    def write_all(self, employees: List['Employee']):
+        self._employees = employees.copy()
+        self._save_data()
+
+    def get_by_id(self, employee_id: int) -> Employee | None:
+        for employee in self._employees:
+            if employee.employee_id == employee_id:
+                return employee
+        return None
+
+    def get_k_n_short_list(self, k: int, n: int) -> List[Dict[str, Any]]:
+        start_index = (n - 1) * k
+        end_index = start_index + k
+
+        if start_index >= len(self._employees):
+            return []
+
+        short_list = []
+        for i in range(start_index, min(end_index, len(self._employees))):
+            employee = self._employees[i]
+            short_list.append({
+                'employee_id': employee.employee_id,
+                'short_info': employee.short_info()
+            })
+
+        return short_list
+
+    def sort_by_field(self, field: str, reverse: bool = False):
+        valid_fields = ['employee_id', 'first_name', 'last_name', 'salary']
+        if field not in valid_fields:
+            raise ValueError(f"Недопустимое поле для сортировки. Допустимые поля: {valid_fields}")
+
+        if field == 'employee_id':
+            self._employees.sort(key=lambda x: x.employee_id, reverse=reverse)
+        elif field == 'first_name':
+            self._employees.sort(key=lambda x: x._first_name, reverse=reverse)
+        elif field == 'last_name':
+            self._employees.sort(key=lambda x: x._last_name, reverse=reverse)
+        elif field == 'salary':
+            self._employees.sort(key=lambda x: x.salary, reverse=reverse)
+
+        self._save_data()
+
+    def add_employee(self, first_name: str, last_name: str, salary: int,
+                     patronymic: str | None = None) -> 'Employee':
+        if self._employees:
+            new_id = max(emp.employee_id for emp in self._employees) + 1
+        else:
+            new_id = 1
+
+        new_employee = Employee(new_id, first_name, last_name, patronymic, salary)
+        self._employees.append(new_employee)
+        self._save_data()
+        return new_employee
+
+    def update_employee(self, employee_id: int, **kwargs) -> bool:
+        employee = self.get_by_id(employee_id)
+        if not employee:
+            return False
+
+        valid_fields = ['first_name', 'last_name', 'patronymic', 'salary']
+        for field, value in kwargs.items():
+            if field in valid_fields:
+                if field == 'salary':
+                    employee.salary = value
+                elif field == 'first_name':
+                    employee._first_name = value
+                elif field == 'last_name':
+                    employee._last_name = value
+                elif field == 'patronymic':
+                    employee._patronymic = value
+
+        self._save_data()
+        return True
+
+    def delete_employee(self, employee_id: int) -> bool:
+        for i, employee in enumerate(self._employees):
+            if employee.employee_id == employee_id:
+                del self._employees[i]
+                self._save_data()
+                return True
+        return False
+
+    def get_count(self) -> int:
+        return len(self._employees)
+
+    def get_all_short_info(self) -> List[Dict[str, Any]]:
+        return [{'employee_id': emp.employee_id, 'short_info': emp.short_info()}
+                for emp in self._employees]
+
+    def export_to_yaml_string(self) -> str:
+        data = []
+        for emp in self._employees:
+            emp_dict = {
+                'employee_id': emp.employee_id,
+                'first_name': emp._first_name,
+                'last_name': emp._last_name,
+                'patronymic': emp._patronymic,
+                'salary': emp.salary
+            }
+            data.append(emp_dict)
+
+        return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
