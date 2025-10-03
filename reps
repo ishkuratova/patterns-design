@@ -52,21 +52,24 @@ class Employee_rep(ABC):
 
         return short_list
 
-    def sort_by_field(self, field: str, reverse: bool = False):
+    def sort_by_field(self, field: str, reverse: bool = False) -> List['Employee']:
         valid_fields = ['employee_id', 'first_name', 'last_name', 'salary']
         if field not in valid_fields:
             raise ValueError(f"Недопустимое поле для сортировки. Допустимые поля: {valid_fields}")
 
+        employees_copy = self._employees.copy()
+
         if field == 'employee_id':
-            self._employees.sort(key=lambda x: x.employee_id, reverse=reverse)
+            employees_copy.sort(key=lambda x: x.employee_id, reverse=reverse)
         elif field == 'first_name':
-            self._employees.sort(key=lambda x: x._first_name, reverse=reverse)
+            employees_copy.sort(key=lambda x: x._first_name, reverse=reverse)
         elif field == 'last_name':
-            self._employees.sort(key=lambda x: x._last_name, reverse=reverse)
+            employees_copy.sort(key=lambda x: x._last_name, reverse=reverse)
         elif field == 'salary':
-            self._employees.sort(key=lambda x: x.salary, reverse=reverse)
+            employees_copy.sort(key=lambda x: x.salary, reverse=reverse)
 
         self._save_data()
+        return employees_copy
 
     def add_employee(self, first_name: str, last_name: str, salary: int,
                      patronymic: str | None = None) -> Employee:
@@ -191,6 +194,65 @@ class Employee_rep_yaml(Employee_rep):
             }
             data.append(emp_dict)
         return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
+
+
+class Employee_rep_DB_adapter(Employee_rep):
+    def __init__(self, host: str, port: int, database: str, user: str, password: str):
+        self._db = Employee_rep_DB(host, port, database, user, password)
+        super().__init__("")
+
+    def _load_data(self):
+        self._employees = self._db.get_all_employees()
+
+    def _save_data(self):
+        pass
+
+    def read_all(self) -> List['Employee']:
+        return self._db.get_all_employees()
+
+    def write_all(self, employees: List['Employee']):
+        current_employees = self._db.get_all_employees()
+
+        current_ids = {emp.employee_id for emp in current_employees}
+        new_ids = {emp.employee_id for emp in employees}
+
+        for emp_id in current_ids - new_ids:
+            self._db.delete_employee(emp_id)
+
+        for employee in employees:
+            if employee.employee_id in current_ids:
+                self._db.update_employee(
+                    employee.employee_id,
+                    first_name=employee._first_name,
+                    last_name=employee._last_name,
+                    patronymic=employee._patronymic,
+                    salary=employee.salary
+                )
+            else:
+                self._db.add_employee(
+                    employee._first_name,
+                    employee._last_name,
+                    employee.salary,
+                    employee._patronymic
+                )
+
+    def sort_by_field(self, field: str, reverse: bool = False) -> List['Employee']:
+        valid_fields = ['employee_id', 'first_name', 'last_name', 'salary']
+        if field not in valid_fields:
+            raise ValueError(f"Недопустимое поле для сортировки. Допустимые поля: {valid_fields}")
+
+        employees = self._db.get_all_employees()
+
+        if field == 'employee_id':
+            employees.sort(key=lambda x: x.employee_id, reverse=reverse)
+        elif field == 'first_name':
+            employees.sort(key=lambda x: x._first_name, reverse=reverse)
+        elif field == 'last_name':
+            employees.sort(key=lambda x: x._last_name, reverse=reverse)
+        elif field == 'salary':
+            employees.sort(key=lambda x: x.salary, reverse=reverse)
+
+        return employees
 
 
 class Database_connection:
