@@ -193,24 +193,29 @@ class Employee_rep_yaml(Employee_rep):
         return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
 
 
-class Employee_rep_DB:
-    def __init__(self,
-                 host: str,
-                 port: int,
-                 database: str,
-                 user: str,
-                 password: str):
-        self.connection_params = {
-            'host': host,
-            'port': port,
-            'database': database,
-            'user': user,
-            'password': password
-        }
-        self._ensure_table_exists()
+class Database_connection:
+    _instance = None
 
-    def _get_connection(self):
+    def __new__(cls, host: str, port: int, database: str, user: str, password: str):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.connection_params = {
+                'host': host,
+                'port': port,
+                'database': database,
+                'user': user,
+                'password': password
+            }
+        return cls._instance
+
+    def get_connection(self):
         return psycopg2.connect(**self.connection_params)
+
+
+class Employee_rep_DB:
+    def __init__(self, host: str, port: int, database: str, user: str, password: str):
+        self._db = Database_connection(host, port, database, user, password)
+        self._ensure_table_exists()
 
     def _ensure_table_exists(self):
         create_table_query = """
@@ -225,7 +230,7 @@ class Employee_rep_DB:
         """
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(create_table_query)
                     conn.commit()
@@ -240,7 +245,7 @@ class Employee_rep_DB:
         """
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query, (employee_id,))
                     row = cursor.fetchone()
@@ -270,7 +275,7 @@ class Employee_rep_DB:
         """
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query, (k, offset))
                     rows = cursor.fetchall()
@@ -305,7 +310,7 @@ class Employee_rep_DB:
         """
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query, (first_name, last_name, patronymic, salary))
                     row = cursor.fetchone()
@@ -344,7 +349,7 @@ class Employee_rep_DB:
         query = f"UPDATE employees SET {set_clause} WHERE employee_id = %s"
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query, values)
                     conn.commit()
@@ -358,7 +363,7 @@ class Employee_rep_DB:
         query = "DELETE FROM employees WHERE employee_id = %s"
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query, (employee_id,))
                     conn.commit()
@@ -372,7 +377,7 @@ class Employee_rep_DB:
         query = "SELECT COUNT(*) FROM employees"
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query)
                     result = cursor.fetchone()
@@ -390,7 +395,7 @@ class Employee_rep_DB:
         """
 
         try:
-            with self._get_connection() as conn:
+            with self._db.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(query)
                     rows = cursor.fetchall()
