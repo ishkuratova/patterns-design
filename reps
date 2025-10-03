@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 from employee import Employee
 
 
-class Employee_rep(ABC):
+class EmployeeRep(ABC):
     def __init__(self, filename: str):
         self.filename = filename
         self._employees = []
@@ -62,9 +62,9 @@ class Employee_rep(ABC):
         if field == 'employee_id':
             employees_copy.sort(key=lambda x: x.employee_id, reverse=reverse)
         elif field == 'first_name':
-            employees_copy.sort(key=lambda x: x._first_name, reverse=reverse)
+            employees_copy.sort(key=lambda x: x.first_name, reverse=reverse)
         elif field == 'last_name':
-            employees_copy.sort(key=lambda x: x._last_name, reverse=reverse)
+            employees_copy.sort(key=lambda x: x.last_name, reverse=reverse)
         elif field == 'salary':
             employees_copy.sort(key=lambda x: x.salary, reverse=reverse)
 
@@ -94,11 +94,11 @@ class Employee_rep(ABC):
                 if field == 'salary':
                     employee.salary = value
                 elif field == 'first_name':
-                    employee._first_name = value
+                    employee.first_name = value
                 elif field == 'last_name':
-                    employee._last_name = value
+                    employee.last_name = value
                 elif field == 'patronymic':
-                    employee._patronymic = value
+                    employee.patronymic = value
 
         self._save_data()
         return True
@@ -119,7 +119,7 @@ class Employee_rep(ABC):
                 for emp in self._employees]
 
 
-class Employee_rep_json(Employee_rep):
+class EmployeeRepJson(EmployeeRep):
     def _load_data(self):
         if os.path.exists(self.filename):
             try:
@@ -139,9 +139,9 @@ class Employee_rep_json(Employee_rep):
                 for emp in self._employees:
                     emp_dict = {
                         'employee_id': emp.employee_id,
-                        'first_name': emp._first_name,
-                        'last_name': emp._last_name,
-                        'patronymic': emp._patronymic,
+                        'first_name': emp.first_name,
+                        'last_name': emp.last_name,
+                        'patronymic': emp.patronymic,
                         'salary': emp.salary
                     }
                     data.append(emp_dict)
@@ -150,7 +150,7 @@ class Employee_rep_json(Employee_rep):
             print(f"Ошибка сохранения данных: {e}")
 
 
-class Employee_rep_yaml(Employee_rep):
+class EmployeeRepYaml(EmployeeRep):
     def _load_data(self):
         if os.path.exists(self.filename):
             try:
@@ -172,9 +172,9 @@ class Employee_rep_yaml(Employee_rep):
                 for emp in self._employees:
                     emp_dict = {
                         'employee_id': emp.employee_id,
-                        'first_name': emp._first_name,
-                        'last_name': emp._last_name,
-                        'patronymic': emp._patronymic,
+                        'first_name': emp.first_name,
+                        'last_name': emp.last_name,
+                        'patronymic': emp.patronymic,
                         'salary': emp.salary
                     }
                     data.append(emp_dict)
@@ -187,18 +187,18 @@ class Employee_rep_yaml(Employee_rep):
         for emp in self._employees:
             emp_dict = {
                 'employee_id': emp.employee_id,
-                'first_name': emp._first_name,
-                'last_name': emp._last_name,
-                'patronymic': emp._patronymic,
+                'first_name': emp.first_name,
+                'last_name': emp.last_name,
+                'patronymic': emp.patronymic,
                 'salary': emp.salary
             }
             data.append(emp_dict)
         return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
 
 
-class Employee_rep_DB_adapter(Employee_rep):
+class EmployeeRepDBAdapter(EmployeeRep):
     def __init__(self, host: str, port: int, database: str, user: str, password: str):
-        self._db = Employee_rep_DB(host, port, database, user, password)
+        self._db = EmployeeRepDB(host, port, database, user, password)
         super().__init__("")
 
     def _load_data(self):
@@ -223,17 +223,17 @@ class Employee_rep_DB_adapter(Employee_rep):
             if employee.employee_id in current_ids:
                 self._db.update_employee(
                     employee.employee_id,
-                    first_name=employee._first_name,
-                    last_name=employee._last_name,
-                    patronymic=employee._patronymic,
+                    first_name=employee.first_name,
+                    last_name=employee.last_name,
+                    patronymic=employee.patronymic,
                     salary=employee.salary
                 )
             else:
                 self._db.add_employee(
-                    employee._first_name,
-                    employee._last_name,
+                    employee.first_name,
+                    employee.last_name,
                     employee.salary,
-                    employee._patronymic
+                    employee.patronymic
                 )
 
     def sort_by_field(self, field: str, reverse: bool = False) -> List['Employee']:
@@ -246,16 +246,16 @@ class Employee_rep_DB_adapter(Employee_rep):
         if field == 'employee_id':
             employees.sort(key=lambda x: x.employee_id, reverse=reverse)
         elif field == 'first_name':
-            employees.sort(key=lambda x: x._first_name, reverse=reverse)
+            employees.sort(key=lambda x: x.first_name, reverse=reverse)
         elif field == 'last_name':
-            employees.sort(key=lambda x: x._last_name, reverse=reverse)
+            employees.sort(key=lambda x: x.last_name, reverse=reverse)
         elif field == 'salary':
             employees.sort(key=lambda x: x.salary, reverse=reverse)
 
         return employees
 
 
-class Database_connection:
+class DatabaseConnection:
     _instance = None
 
     def __new__(cls, host: str, port: int, database: str, user: str, password: str):
@@ -274,9 +274,9 @@ class Database_connection:
         return psycopg2.connect(**self.connection_params)
 
 
-class Employee_rep_DB:
+class EmployeeRepDB:
     def __init__(self, host: str, port: int, database: str, user: str, password: str):
-        self._db = Database_connection(host, port, database, user, password)
+        self._db = DatabaseConnection(host, port, database, user, password)
         self._ensure_table_exists()
 
     def _ensure_table_exists(self):
@@ -480,8 +480,8 @@ class Employee_rep_DB:
             return []
 
 
-class Employee_rep_DB_decorator:
-    def __init__(self, db_repo: Employee_rep_DB):
+class EmployeeRepDBDecorator:
+    def __init__(self, db_repo: EmployeeRepDB):
         self._db_repo = db_repo
 
     def get_k_n_short_list(self, k: int, n: int, filter_func: callable = None, sort_field: str = None,
@@ -499,9 +499,9 @@ class Employee_rep_DB_decorator:
             if sort_field == 'employee_id':
                 employees.sort(key=lambda x: x.employee_id, reverse=reverse)
             elif sort_field == 'first_name':
-                employees.sort(key=lambda x: x._first_name, reverse=reverse)
+                employees.sort(key=lambda x: x.first_name, reverse=reverse)
             elif sort_field == 'last_name':
-                employees.sort(key=lambda x: x._last_name, reverse=reverse)
+                employees.sort(key=lambda x: x.last_name, reverse=reverse)
             elif sort_field == 'salary':
                 employees.sort(key=lambda x: x.salary, reverse=reverse)
 
@@ -527,8 +527,8 @@ class Employee_rep_DB_decorator:
         return len(employees)
 
 
-class Employee_rep_file_decorator:
-    def __init__(self, file_repo: Employee_rep):
+class EmployeeRepFileDecorator:
+    def __init__(self, file_repo: EmployeeRep):
         self._file_repo = file_repo
 
     def get_k_n_short_list(self, k: int, n: int, filter_func: callable = None, sort_field: str = None,
@@ -546,9 +546,9 @@ class Employee_rep_file_decorator:
             if sort_field == 'employee_id':
                 employees.sort(key=lambda x: x.employee_id, reverse=reverse)
             elif sort_field == 'first_name':
-                employees.sort(key=lambda x: x._first_name, reverse=reverse)
+                employees.sort(key=lambda x: x.first_name, reverse=reverse)
             elif sort_field == 'last_name':
-                employees.sort(key=lambda x: x._last_name, reverse=reverse)
+                employees.sort(key=lambda x: x.last_name, reverse=reverse)
             elif sort_field == 'salary':
                 employees.sort(key=lambda x: x.salary, reverse=reverse)
 
@@ -575,3 +575,5 @@ class Employee_rep_file_decorator:
             employees = [emp for emp in employees if filter_func(emp)]
 
         return len(employees)
+
+
