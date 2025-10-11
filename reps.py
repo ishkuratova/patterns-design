@@ -35,7 +35,7 @@ class EmployeeRep(ABC):
                 return employee
         return None
 
-    def get_k_n_short_list(self, k: int, n: int) -> List[Dict[str, Any]]:
+    def get_k_n_short_list(self, k: int, n: int) -> List['Employee']:
         start_index = (n - 1) * k
         end_index = start_index + k
 
@@ -45,10 +45,7 @@ class EmployeeRep(ABC):
         short_list = []
         for i in range(start_index, min(end_index, len(self._employees))):
             employee = self._employees[i]
-            short_list.append({
-                'employee_id': employee.employee_id,
-                'short_info': employee.short_info()
-            })
+            short_list.append(employee)
 
         return short_list
 
@@ -114,9 +111,8 @@ class EmployeeRep(ABC):
     def get_count(self) -> int:
         return len(self._employees)
 
-    def get_all_short_info(self) -> List[Dict[str, Any]]:
-        return [{'employee_id': emp.employee_id, 'short_info': emp.short_info()}
-                for emp in self._employees]
+    def __str__(self):
+        return f"{self._last_name} {self._first_name} {self._salary}"
 
 
 class EmployeeRepJson(EmployeeRep):
@@ -182,19 +178,6 @@ class EmployeeRepYaml(EmployeeRep):
         except Exception as e:
             print(f"Ошибка сохранения данных в YAML: {e}")
 
-    def export_to_yaml_string(self) -> str:
-        data = []
-        for emp in self._employees:
-            emp_dict = {
-                'employee_id': emp.employee_id,
-                'first_name': emp.first_name,
-                'last_name': emp.last_name,
-                'patronymic': emp.patronymic,
-                'salary': emp.salary
-            }
-            data.append(emp_dict)
-        return yaml.dump(data, default_flow_style=False, allow_unicode=True, indent=2)
-
 
 class EmployeeRepDBAdapter(EmployeeRep):
     def __init__(self, host: str, port: int, database: str, user: str, password: str):
@@ -206,7 +189,6 @@ class EmployeeRepDBAdapter(EmployeeRep):
 
     def _save_data(self):
         try:
-            print(f"DEBUG: Сохранение {len(self._employees)} сотрудников в БД")
             current_db_employees = self._db.get_all_employees()
             current_ids = {emp.employee_id for emp in current_db_employees}
 
@@ -234,7 +216,6 @@ class EmployeeRepDBAdapter(EmployeeRep):
             print(f"DEBUG: Ошибка сохранения в БД: {e}")
 
     def read_all(self) -> List['Employee']:
-        print(f"DEBUG: read_all() возвращает {len(self._employees)} сотрудников")
         return self._employees.copy()
 
     def write_all(self, employees: List['Employee']):
@@ -354,7 +335,7 @@ class EmployeeRepDB:
             print(f"Ошибка получения сотрудника по ID: {e}")
             return None
 
-    def get_k_n_short_list(self, k: int, n: int) -> List[Dict[str, Any]]:
+    def get_k_n_short_list(self, k: int, n: int) -> List['Employee']:
         offset = (n - 1) * k
         query = """
         SELECT employee_id, first_name, last_name, patronymic, salary 
@@ -379,10 +360,7 @@ class EmployeeRepDB:
                             'salary': row[4]
                         }
                         employee = Employee(employee_data)
-                        short_list.append({
-                            'employee_id': employee.employee_id,
-                            'short_info': employee.short_info()
-                        })
+                        short_list.append(employee)
 
                     return short_list
 
@@ -512,7 +490,7 @@ class EmployeeRepDBDecorator:
         self._db_repo = db_repo
 
     def get_k_n_short_list(self, k: int, n: int, filter_func: callable = None, sort_field: str = None,
-                           reverse: bool = False) -> List[Dict[str, Any]]:
+                           reverse: bool = False) -> List['Employee']:
         employees = self._db_repo.get_all_employees()
 
         if filter_func:
@@ -538,10 +516,7 @@ class EmployeeRepDBDecorator:
         short_list = []
         for i in range(offset, min(end_index, len(employees))):
             employee = employees[i]
-            short_list.append({
-                'employee_id': employee.employee_id,
-                'short_info': employee.short_info()
-            })
+            short_list.append(employee)
 
         return short_list
 
@@ -559,7 +534,7 @@ class EmployeeRepFileDecorator:
         self._file_repo = file_repo
 
     def get_k_n_short_list(self, k: int, n: int, filter_func: callable = None, sort_field: str = None,
-                           reverse: bool = False) -> List[Dict[str, Any]]:
+                           reverse: bool = False) -> List['Employee']:
         employees = self._file_repo.read_all()
 
         if filter_func:
@@ -588,10 +563,7 @@ class EmployeeRepFileDecorator:
         short_list = []
         for i in range(start_index, min(end_index, len(employees))):
             employee = employees[i]
-            short_list.append({
-                'employee_id': employee.employee_id,
-                'short_info': employee.short_info()
-            })
+            short_list.append(employee)
 
         return short_list
 
