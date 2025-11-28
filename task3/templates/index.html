@@ -5,6 +5,9 @@
 {% block content %}
 <div class="page-header">
     <h2>Сотрудники {{ current_organization_name }}</h2>
+    <div class="actions">
+        <a href="{{ url_for('add_employee_form') }}" class="btn btn-primary">Добавить сотрудника</a>
+    </div>
 </div>
 
 {% if employees %}
@@ -28,9 +31,17 @@
                 <td>{{ employee.passport }}</td>
                 <td class="actions">
                     <a href="{{ url_for('get_employee', employee_id=employee.employee_id) }}" 
-                       class="btn btn-info btn-sm" target="_blank">
+                       class="btn btn-info btn-sm">
                         Просмотр
                     </a>
+                    <a href="{{ url_for('edit_employee_form', employee_id=employee.employee_id) }}" 
+                       class="btn btn-warning btn-sm">
+                        Редактировать
+                    </a>
+                    <form method="POST" action="{{ url_for('delete_employee', employee_id=employee.employee_id) }}" 
+                          style="display: inline;" onsubmit="return confirm('Вы уверены, что хотите удалить этого сотрудника?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}
@@ -40,6 +51,7 @@
 {% else %}
 <div class="no-data-message">
     <p>Нет данных о сотрудниках в выбранной организации</p>
+    <a href="{{ url_for('add_employee_form') }}" class="btn btn-primary">Добавить первого сотрудника</a>
 </div>
 {% endif %}
 {% endblock %}
