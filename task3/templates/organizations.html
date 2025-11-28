@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Организации{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Выбор организации</h2>
+</div>
+
+<div class="organizations-grid">
+    {% for org_id, org_config in organizations.items() %}
+    <div class="organization-card {% if org_id == current_organization %}active{% endif %}">
+        <div class="org-header">
+            <h3>{{ org_config.name }}</h3>
+            <span class="storage-type">{{ org_config.type|upper }} хранилище</span>
+        </div>
+        <div class="org-info">
+            <p><strong>Тип:</strong> {{ org_config.type }}</p>
+            {% if org_config.type == 'db' %}
+                <p><strong>База данных:</strong> PostgreSQL</p>
+            {% else %}
+                <p><strong>Файл:</strong> {{ org_config.file_path }}</p>
+            {% endif %}
+        </div>
+        <div class="org-actions">
+            {% if org_id != current_organization %}
+                <form method="POST" action="{{ url_for('set_organization') }}">
+                    <input type="hidden" name="organization_id" value="{{ org_id }}">
+                    <button type="submit" class="btn btn-primary">Выбрать</button>
+                </form>
+            {% else %}
+                <button class="btn btn-success" disabled>Текущая</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
