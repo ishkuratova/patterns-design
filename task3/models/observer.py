@@ -42,6 +42,18 @@ class EmployeeRepositorySubject(Subject):
     def employee_viewed(self, employee_data: dict) -> None:
         """Уведомляет о просмотре сотрудника"""
         self.notify('employee_viewed', employee_data)
+    
+    def employee_added(self, employee_data: dict) -> None:
+        """Уведомляет о добавлении сотрудника"""
+        self.notify('employee_added', employee_data)
+    
+    def employee_updated(self, employee_data: dict) -> None:
+        """Уведомляет об обновлении сотрудника"""
+        self.notify('employee_updated', employee_data)
+    
+    def employee_deleted(self, employee_id: int) -> None:
+        """Уведомляет об удалении сотрудника"""
+        self.notify('employee_deleted', {'employee_id': employee_id})
 
 
 class MainControllerObserver(Observer):
@@ -58,3 +70,9 @@ class MainControllerObserver(Observer):
             self.main_controller.on_employees_loaded(data)
         elif event_type == 'employee_viewed':
             self.main_controller.on_employee_viewed(data)
+        elif event_type == 'employee_added':
+            self.main_controller.on_employee_added(data)
+        elif event_type == 'employee_updated':
+            self.main_controller.on_employee_updated(data)
+        elif event_type == 'employee_deleted':
+            self.main_controller.on_employee_deleted(data)
