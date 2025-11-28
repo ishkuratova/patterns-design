@@ -1,6 +1,7 @@
 from flask import session
 from .organization_controller import OrganizationController
 from .employee_controller import EmployeeController
+from .employee_form_controller import EmployeeFormController
 from models.observer import MainControllerObserver
 
 class MainController:
@@ -10,6 +11,7 @@ class MainController:
         self.org_controller = OrganizationController()
         self._current_organization = None
         self._employee_controller = None
+        self._employee_form_controller = None
         self._observer = MainControllerObserver(self)
     
     def set_current_organization(self, organization_id):
@@ -30,6 +32,7 @@ class MainController:
                 observable_repo.attach(self._observer)
             
             self._employee_controller = EmployeeController(repo, observable_repo)
+            self._employee_form_controller = EmployeeFormController(self._employee_controller)
             return True
         return False
     
@@ -53,6 +56,12 @@ class MainController:
                     self.set_current_organization(first_org)
         return self._employee_controller
     
+    def get_employee_form_controller(self):
+        """Получение контроллера форм сотрудников"""
+        if not self._employee_form_controller:
+            self.get_employee_controller()  # Инициализируем employee controller
+        return self._employee_form_controller
+    
     def get_organizations_data(self):
         """Получение данных всех организаций"""
         return self.org_controller.get_all_organizations()
@@ -65,9 +74,19 @@ class MainController:
     def on_employees_loaded(self, data):
         """Обработчик загрузки сотрудников"""
         print(f"Employees loaded: {data['count']} employees")
-        # Можно добавить логирование, кэширование и т.д.
     
     def on_employee_viewed(self, data):
         """Обработчик просмотра сотрудника"""
         print(f"Employee viewed: {data['full_name']} (ID: {data['employee_id']})")
-        # Можно добавить логирование активности, аналитику и т.д.
+    
+    def on_employee_added(self, data):
+        """Обработчик добавления сотрудника"""
+        print(f"Employee added: {data['first_name']} {data['last_name']} (ID: {data['employee_id']})")
+    
+    def on_employee_updated(self, data):
+        """Обработчик обновления сотрудника"""
+        print(f"Employee updated: {data['first_name']} {data['last_name']} (ID: {data['employee_id']})")
+    
+    def on_employee_deleted(self, data):
+        """Обработчик удаления сотрудника"""
+        print(f"Employee deleted: ID {data['employee_id']}")
