@@ -2,7 +2,7 @@ from typing import List, Optional
 from models import Employee
 
 class EmployeeController:
-    """Контроллер для операций с сотрудниками (только чтение)"""
+    """Контроллер для операций с сотрудниками"""
     
     def __init__(self, repository, observable_repository=None):
         self.repository = repository
@@ -38,3 +38,68 @@ class EmployeeController:
         except Exception as e:
             print(f"Error getting employees count: {e}")
             return 0
+    
+    def add_employee(self, first_name: str, last_name: str, salary: int,
+                    passport: str, patronymic: Optional[str] = None) -> Employee:
+        """Добавление нового сотрудника"""
+        try:
+            # Используем observable репозиторий если доступен
+            if self.observable_repository:
+                return self.observable_repository.add_employee(
+                    first_name, last_name, salary, passport, patronymic
+                )
+            else:
+                return self.repository.add_employee(
+                    first_name, last_name, salary, passport, patronymic
+                )
+        except Exception as e:
+            print(f"Error adding employee: {e}")
+            raise e
+    
+    def update_employee(self, employee_id: int, **kwargs) -> bool:
+        """Обновление данных сотрудника"""
+        try:
+            # Используем observable репозиторий если доступен
+            if self.observable_repository:
+                return self.observable_repository.update_employee(employee_id, **kwargs)
+            else:
+                return self.repository.update_employee(employee_id, **kwargs)
+        except Exception as e:
+            print(f"Error updating employee: {e}")
+            raise e
+    
+    def delete_employee(self, employee_id: int) -> bool:
+        """Удаление сотрудника"""
+        try:
+            # Используем observable репозиторий если доступен
+            if self.observable_repository:
+                return self.observable_repository.delete_employee(employee_id)
+            else:
+                return self.repository.delete_employee(employee_id)
+        except Exception as e:
+            print(f"Error deleting employee: {e}")
+            raise e
+    
+    def validate_employee_data(self, first_name: str, last_name: str, 
+                              salary: int, passport: str, 
+                              patronymic: Optional[str] = None) -> dict:
+        """Валидация данных сотрудника"""
+        errors = {}
+        
+        if not first_name or not first_name.strip():
+            errors['first_name'] = "Имя обязательно для заполнения"
+        
+        if not last_name or not last_name.strip():
+            errors['last_name'] = "Фамилия обязательна для заполнения"
+        
+        try:
+            salary_int = int(salary)
+            if salary_int < 0:
+                errors['salary'] = "Зарплата не может быть отрицательной"
+        except (ValueError, TypeError):
+            errors['salary'] = "Зарплата должна быть числом"
+        
+        if not passport or not passport.strip():
+            errors['passport'] = "Паспорт обязателен для заполнения"
+        
+        return errors
