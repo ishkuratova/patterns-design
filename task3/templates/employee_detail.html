@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Сотрудник {{ employee.get_full_name() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Подробная информация о сотруднике</h2>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад к списку</a>
+</div>
+
+<div class="employee-detail">
+    <div class="detail-section">
+        <h4>Основная информация</h4>
+        <div class="detail-row">
+            <span class="label">ID:</span>
+            <span class="value">{{ employee.employee_id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Фамилия:</span>
+            <span class="value">{{ employee.last_name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Имя:</span>
+            <span class="value">{{ employee.first_name }}</span>
+        </div>
+        {% if employee.patronymic %}
+        <div class="detail-row">
+            <span class="label">Отчество:</span>
+            <span class="value">{{ employee.patronymic }}</span>
+        </div>
+        {% endif %}
+        <div class="detail-row">
+            <span class="label">Полное имя:</span>
+            <span class="value">{{ employee.get_full_name() }}</span>
+        </div>
+    </div>
+    
+    <div class="detail-section">
+        <h4>Рабочая информация</h4>
+        <div class="detail-row">
+            <span class="label">Зарплата:</span>
+            <span class="value">{{ employee.salary }} ₽</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Паспорт:</span>
+            <span class="value">{{ employee.passport }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
