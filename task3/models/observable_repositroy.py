@@ -24,6 +24,56 @@ class ObservableEmployeeRepository(EmployeeRepositorySubject):
         """Получение страницы сотрудников"""
         return self._repository.get_k_n_short_list(k, n)
     
+    def add_employee(self, first_name: str, last_name: str, salary: int,
+                    passport: str, patronymic: str = None):
+        """Добавление сотрудника с уведомлением наблюдателей"""
+        employee = self._repository.add_employee(
+            first_name, last_name, salary, passport, patronymic
+        )
+        
+        # Уведомляем наблюдателей о добавлении
+        self.employee_added({
+            'employee_id': employee.employee_id,
+            'first_name': employee.first_name,
+            'last_name': employee.last_name,
+            'patronymic': employee.patronymic,
+            'salary': employee.salary,
+            'passport': employee.passport
+        })
+        
+        return employee
+    
+    def update_employee(self, employee_id: int, **kwargs):
+        """Обновление сотрудника с уведомлением наблюдателей"""
+        success = self._repository.update_employee(employee_id, **kwargs)
+        
+        if success:
+            # Получаем обновленные данные сотрудника
+            employee = self._repository.get_by_id(employee_id)
+            if employee:
+                # Уведомляем наблюдателей об обновлении
+                self.employee_updated({
+                    'employee_id': employee.employee_id,
+                    'first_name': employee.first_name,
+                    'last_name': employee.last_name,
+                    'patronymic': employee.patronymic,
+                    'salary': employee.salary,
+                    'passport': employee.passport,
+                    'updated_fields': list(kwargs.keys())
+                })
+        
+        return success
+    
+    def delete_employee(self, employee_id: int):
+        """Удаление сотрудника с уведомлением наблюдателей"""
+        success = self._repository.delete_employee(employee_id)
+        
+        if success:
+            # Уведомляем наблюдателей об удалении
+            self.employee_deleted(employee_id)
+        
+        return success
+    
     def get_count(self):
         """Получение количества сотрудников"""
         return self._repository.get_count()
