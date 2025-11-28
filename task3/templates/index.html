@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - {{ current_organization_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Сотрудники {{ current_organization_name }}</h2>
+</div>
+
+{% if employees %}
+<div class="employees-table-container">
+    <table class="employees-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>ФИО</th>
+                <th>Зарплата</th>
+                <th>Паспорт</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in employees %}
+            <tr>
+                <td>{{ employee.employee_id }}</td>
+                <td>{{ employee.get_full_name() }}</td>
+                <td>{{ employee.salary }} ₽</td>
+                <td>{{ employee.passport }}</td>
+                <td class="actions">
+                    <a href="{{ url_for('get_employee', employee_id=employee.employee_id) }}" 
+                       class="btn btn-info btn-sm" target="_blank">
+                        Просмотр
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="no-data-message">
+    <p>Нет данных о сотрудниках в выбранной организации</p>
+</div>
+{% endif %}
+{% endblock %}
